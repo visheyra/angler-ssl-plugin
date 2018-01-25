@@ -23,7 +23,7 @@ def details_search(details, host):
     if 'heartbleed' in details:
         r.append({
             'severity': 7,
-            'description': 'Heartbleed',
+            'description': 'SSL: Heartbleed vulnerability',
             'message': 'Heartbleed vulnerable configuration for host {}'.format(host),
             'ressource': host,
             'values': {'foo': 'bar'}
@@ -31,7 +31,7 @@ def details_search(details, host):
     if 'poodle' in details:
         r.append({
             'severity': 7,
-            'description': 'Poodle',
+            'description': 'SSL: Poodle vulnerability',
             'message': 'Poodle vulnerable configuration for host {}'.format(host),
             'ressource': host,
             'values': {'foo': 'bar'}
@@ -39,7 +39,7 @@ def details_search(details, host):
     if 'supportsRc4' in details:
         r.append({
             'severity': 4,
-            'description': 'RC4 ciphers',
+            'description': 'SSL: RC4 ciphers supported',
             'message': 'RC4 supported ciphers for host {}'.format(host),
             'ressource': host,
             'values': {'foo': 'bar'}
@@ -47,7 +47,7 @@ def details_search(details, host):
     if 'vulnBeast' in details:
         r.append({
             'severity': 4,
-            'description': 'Beast',
+            'description': 'SSL: Beast vulnerability',
             'message': 'Beast vulnerable configuration for host {}'.format(host),
             'ressource': host,
             'values': {'foo': 'bar'}
@@ -55,7 +55,7 @@ def details_search(details, host):
     if 'poodleTls' in details and details['poodleTls'] == 2:
         r.append({
             'severity': 7,
-            'description': 'Poodle TLS',
+            'description': 'SSL: Poodle TLS',
             'message': 'poodleTls vulnerable configuration for host {}'.format(host),
             'ressource': host,
             'values': {'foo': 'bar'}
@@ -63,7 +63,7 @@ def details_search(details, host):
     if 'fallbackScsv' not in details:
         r.append({
             'severity': 4,
-            'description': 'No scsv fallback',
+            'description': 'SSL: No scsv fallback',
             'message': 'SCSV Fallback not enabled for host {}'.format(host),
             'ressource': host,
             'values': {'foo': 'bar'}
@@ -71,7 +71,7 @@ def details_search(details, host):
     if 'rc4WithModern' in details:
         r.append({
             'severity': 6,
-            'description': 'No scsv fallback',
+            'description': 'SSL: RC4 supported on new clients',
             'message': 'RC4 cipher can be used with modern client',
             'ressource': host,
             'values': {'foo': 'bar'}
@@ -79,7 +79,7 @@ def details_search(details, host):
     if 'openSSLLuckyMinus20' in details and details['openSSLLuckyMinus20'] == 2:
         r.append({
             'severity': 9,
-            'description': 'No scsv fallback',
+            'description': 'SSL: LuckyMinus vulnerability',
             'message': 'LuckyMinus20 attack possible on host {}'.format(host),
             'ressource': host,
             'values': {'foo': 'bar'}
@@ -94,7 +94,7 @@ def detect_cipher_suites(cs, host):
             if 'q' in c.keys():
                 r.append({
                     'severity': 1,
-                    'description': 'Weak suite',
+                    'description': 'SSL: Weak cipher {}'.format(c.name),
                     'message': 'Weak cipher suite used {}'.format(c.name),
                     'ressource': host,
                     'values': {'foo': 'bar'}
@@ -112,10 +112,12 @@ def detect_browser_compatibility(bq, host):
             if b['errorCode'] == 0:
                 r.append({
                     'severity': 2,
-                    'description': 'browser SSL incompatibility',
+                    'description': 'SSL: browser SSL incompatibility {}'.format(
+                        ' '.join([b['client']['name'], b['client']['version']])
+                    ),
                     'ressource': host,
                     'message': 'Your configuration is currently not compatible with {}'.format(
-                        ' '.join([b['client']['name'], b['client']['version']])
+                        ' '.join([ b['client']['name'], b['client']['version'] ])
                     ),
                     'values': {'foo': 'bar'}
                 })
@@ -132,7 +134,7 @@ def detect_protocol(ptcs, host):
             if p['name'] == 'TLS' and p['version'] in ['1.0', '1.1']:
                 r.append({
                     'severity': 3,
-                    'description': 'Weak protocol supported',
+                    'description': 'SSL: Weak protocol {} {}'.format(p['name'], p['version']),
                     'message': 'Host support {} {}'.format(p['name'], p['version']),
                     'ressource': host,
                     'values': {'foo':'bar'}
@@ -140,7 +142,10 @@ def detect_protocol(ptcs, host):
             elif p['name'] == 'SSL':
                 r.append({
                     'severity': 9,
-                    'description': 'Legacy SSL protocol supported',
+                    'description': 'SSL: Legacy protocol {} {}'.format(
+                        p['name'],
+                        p['version']
+                    ),
                     'message:': 'host {} support legacy protocol {} {}'.format(
                         host,
                         p['name'],
