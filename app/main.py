@@ -20,7 +20,7 @@ def get_parameters():
 
 def details_search(details, host):
     r = []
-    if details['heartbleed']:
+    if 'heartbleed' in details:
         r.append({
             'severity': 7,
             'description': 'Heartbleed',
@@ -28,7 +28,7 @@ def details_search(details, host):
             'ressource': host,
             'values': {'foo': 'bar'}
         })
-    if details['poodle']:
+    if 'poodle' in details:
         r.append({
             'severity': 7,
             'description': 'Poodle',
@@ -36,7 +36,7 @@ def details_search(details, host):
             'ressource': host,
             'values': {'foo': 'bar'}
         })
-    if details['supportsRc4']:
+    if 'supportsRc4' in details:
         r.append({
             'severity': 4,
             'description': 'RC4 ciphers',
@@ -44,7 +44,7 @@ def details_search(details, host):
             'ressource': host,
             'values': {'foo': 'bar'}
         })
-    if details['vulnBeast']:
+    if 'vulnBeast' in details:
         r.append({
             'severity': 4,
             'description': 'Beast',
@@ -52,7 +52,7 @@ def details_search(details, host):
             'ressource': host,
             'values': {'foo': 'bar'}
         })
-    if details['poodleTls'] == 2:
+    if 'poodleTls' in details and details['poodleTls'] == 2:
         r.append({
             'severity': 7,
             'description': 'Poodle TLS',
@@ -60,7 +60,7 @@ def details_search(details, host):
             'ressource': host,
             'values': {'foo': 'bar'}
         })
-    if not details['fallbackScsv']:
+    if 'fallbackScsv' not in details:
         r.append({
             'severity': 4,
             'description': 'No scsv fallback',
@@ -68,15 +68,7 @@ def details_search(details, host):
             'ressource': host,
             'values': {'foo': 'bar'}
         })
-    if not details['fallbackScsv']:
-        r.append({
-            'severity': 4,
-            'description': 'No scsv fallback',
-            'message': 'SCSV Fallback not enabled for host {}'.format(host),
-            'ressource': host,
-            'values': {'foo': 'bar'}
-        })
-    if details['rc4WithModern']:
+    if 'rc4WithModern' in details:
         r.append({
             'severity': 6,
             'description': 'No scsv fallback',
@@ -84,7 +76,7 @@ def details_search(details, host):
             'ressource': host,
             'values': {'foo': 'bar'}
         })
-    if details['openSSLLuckyMinus20'] == 2:
+    if 'openSSLLuckyMinus20' in details and details['openSSLLuckyMinus20'] == 2:
         r.append({
             'severity': 9,
             'description': 'No scsv fallback',
@@ -95,56 +87,71 @@ def details_search(details, host):
     return r
 
 def detect_cipher_suites(cs, host):
+    LOGGER = logging.getLogger('ssl')
     r = []
-    for c in cs['list']:
-        if 'q' in c.keys():
-            r.append({
-                'severity': 1,
-                'description': 'Weak suite',
-                'message': 'Weak cipher suite used {}'.format(c.name),
-                'ressource': host,
-                'values': {'foo': 'bar'}
-            })
+    try:
+        for c in cs['list']:
+            if 'q' in c.keys():
+                r.append({
+                    'severity': 1,
+                    'description': 'Weak suite',
+                    'message': 'Weak cipher suite used {}'.format(c.name),
+                    'ressource': host,
+                    'values': {'foo': 'bar'}
+                })
+    except Exception as e:
+        LOGGER.error(e)
+        return []
     return r
 
 def detect_browser_compatibility(bq, host):
+    LOGGER = logging.getLogger('ssl')
     r = []
-    for b in bq:
-        if b['errorCode'] == 0:
-            r.append({
-                'severity': 2,
-                'description': 'browser SSL incompatibility',
-                'resource': host,
-                'message': 'Your configuration is currently not compatible with {}'.format(
-                    ' '.join([b['client']['name'], b['client']['version']])
-                ),
-                'values': {'foo': 'bar'}
-            })
+    try:
+        for b in bq:
+            if b['errorCode'] == 0:
+                r.append({
+                    'severity': 2,
+                    'description': 'browser SSL incompatibility',
+                    'ressource': host,
+                    'message': 'Your configuration is currently not compatible with {}'.format(
+                        ' '.join([b['client']['name'], b['client']['version']])
+                    ),
+                    'values': {'foo': 'bar'}
+                })
+    except Exception as e:
+        LOGGER.error(e)
+        pass
     return r
 
 def detect_protocol(ptcs, host):
+    LOGGER = logging.getLogger('ssl')
     r = []
-    for p in ptcs:
-        if p['name'] == 'TLS' and p['version'] in ['1.0', '1.1']:
-            r.append({
-                'severity': 3,
-                'description': 'Weak protocol supported',
-                'message': 'Host support {} {}'.format(p['name'], p['version']),
-                'resource': host,
-                'values': {'foo':'bar'}
-            })
-        elif p['name'] == 'SSL':
-            r.append({
-                'severity': 9,
-                'description': 'Legacy SSL protocol supported',
-                'message:': 'host {} support legacy protocol {} {}'.format(
-                    host,
-                    p['name'],
-                    p['version']
-                ),
-                'resource': host,
-                'values': {'foo':'bar'}
-            })
+    try:
+        for p in ptcs:
+            if p['name'] == 'TLS' and p['version'] in ['1.0', '1.1']:
+                r.append({
+                    'severity': 3,
+                    'description': 'Weak protocol supported',
+                    'message': 'Host support {} {}'.format(p['name'], p['version']),
+                    'ressource': host,
+                    'values': {'foo':'bar'}
+                })
+            elif p['name'] == 'SSL':
+                r.append({
+                    'severity': 9,
+                    'description': 'Legacy SSL protocol supported',
+                    'message:': 'host {} support legacy protocol {} {}'.format(
+                        host,
+                        p['name'],
+                        p['version']
+                    ),
+                    'ressource': host,
+                    'values': {'foo':'bar'}
+                })
+    except Exception as e:
+        LOGGER.error(e)
+        return []
     return r
 
 def build_report(rep, host):
@@ -162,6 +169,7 @@ def emit_alert(alert, api_host, api_port):
     r = requests.post('https://%s:%d/a' % (api_host, api_port),
                       json=alert,
                       verify=False)
+    LOGGER.info('code {} body {}'.format(r.status_code, r.content))
     if r.status_code != 200:
         LOGGER.error("Error while emiting alert")
     else:
@@ -172,12 +180,12 @@ def analyse(host, api_host, api_port):
     env_cpy = environ.copy()
     del env_cpy['http_proxy']
     del env_cpy['https_proxy']
-    p = subprocess.Popen('/app/ssllabs-scan --quiet {}'.format(host), stdout=subprocess.PIPE, env=env_cpy)
+    p = subprocess.Popen('/app/ssllabs-scan --quiet {}'.format(host).split(), stdout=subprocess.PIPE, env=env_cpy)
     try:
         j, _ = p.communicate()
         rep = loads(j.decode('ascii'))
     except:
-        LOGGER.info('Analyse has fail on %s' % host)
+        LOGGER.info('Analyse has fail on %s', host)
     else:
         for alert in build_report(rep, host):
             emit_alert(alert, api_host, api_port)
@@ -196,7 +204,7 @@ def main():
     LOGGER = logging.getLogger("ssl")
 
     LOGGER.info('Starting to log from ssl plugin')
-    LOGGER.debug('Launched with environ : %s' % environ['parameters'])
+    LOGGER.debug('Launched with environ : %s', environ['parameters'])
     # Loading system variables
     api_host, api_port = environ['API_HOST'], int(environ['API_PORT'])
 
@@ -207,8 +215,11 @@ def main():
     for resource in req.iter_content(chunk_size=None):
         r = uritools.urisplit(str(resource, 'utf-8'))
         LOGGER.info('Received domain "%s"', r.host)
+        if len(r.host) == 0:
+            LOGGER.info('Empty domain received')
+            continue
         if r.host in domains:
-            LOGGER.info('domain %s already started')
+            LOGGER.info('domain %s already started', r.host)
             continue
         elif len(domains.keys()) >= 1:
             LOGGER.info('only one domain scan by analyse')
