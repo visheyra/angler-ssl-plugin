@@ -160,7 +160,7 @@ def build_report(rep, host):
 def emit_alert(alert, api_host, api_port):
     LOGGER = logging.getLogger('ssl')
     r = requests.post('https://%s:%d/a' % (api_host, api_port),
-                      json=payload,
+                      json=alert,
                       verify=False)
     if r.status_code != 200:
         LOGGER.error("Error while emiting alert")
@@ -169,10 +169,10 @@ def emit_alert(alert, api_host, api_port):
 
 def analyse(host, api_host, api_port):
     LOGGER = logging.getLogger("ssl")
-    env_cpy = os.environ.copy()
-    del env['http_proxy']
-    del env['https_proxy']
-    p = subprocess.Popen('/app/ssllabs-scan --quiet {}'.format(host), stdout=supbrocess.Pipe, env=env_cpy)
+    env_cpy = environ.copy()
+    del env_cpy['http_proxy']
+    del env_cpy['https_proxy']
+    p = subprocess.Popen('/app/ssllabs-scan --quiet {}'.format(host), stdout=subprocess.PIPE, env=env_cpy)
     try:
         j, _ = p.communicate()
         rep = loads(j.decode('ascii'))
