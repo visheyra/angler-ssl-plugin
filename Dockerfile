@@ -35,7 +35,7 @@ RUN cd /tmp && \
 #
 # Build the runtime image.
 #
-FROM registry.gitlab.com/angler/plugin-base-image:latest
+FROM visheyra/angler-base-image:latest
 
 ADD requirements.txt /tmp
 
@@ -46,4 +46,4 @@ RUN apk add --no-cache ca-certificates
 ENV VERSION 1.4.0
 COPY --from=scanner_builder /tmp/ssllabs-scan-${VERSION}/ssllabs-scan /app
 ADD app/main.py /app
-CMD ash
+ENV PLUGIN_COMMAND "python3 main.py"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from os import environ
-from json import loads
+from json import loads, dumps
 import requests
 import subprocess
 import logging
@@ -52,7 +52,7 @@ def details_search(details, host):
             'ressource': host,
             'values': {'foo': 'bar'}
         })
-    if details['poodleTls']:
+    if details['poodleTls'] == 2:
         r.append({
             'severity': 7,
             'description': 'Poodle TLS',
@@ -96,8 +96,8 @@ def details_search(details, host):
 
 def detect_cipher_suites(cs, host):
     r = []
-    for c in cs:
-        if c.q == 0:
+    for c in cs['list']:
+        if 'q' in c.keys():
             r.append({
                 'severity': 1,
                 'description': 'Weak suite',
@@ -116,7 +116,7 @@ def detect_browser_compatibility(bq, host):
                 'description': 'browser SSL incompatibility',
                 'resource': host,
                 'message': 'Your configuration is currently not compatible with {}'.format(
-                    ' '.join([b['client']['name'], b['client']['platform'], b['client']['version']])
+                    ' '.join([b['client']['name'], b['client']['version']])
                 ),
                 'values': {'foo': 'bar'}
             })
@@ -147,37 +147,39 @@ def detect_protocol(ptcs, host):
             })
     return r
 
-def build_report(rep):
+def build_report(rep, host):
     alerts = []
     for r in rep:
         for endpoint in r['endpoints']:
-            alerts += details_search(endpoint['details'])
-            alerts += detect_browser_compatibility(endpoint['details']['sims'])
-            alerts += detect_cipher_suites(endpoint['details']['suites'])
-            alerts += detect_protocol(endpoint['details']['protocols'])
+            alerts += details_search(endpoint['details'], host)
+            alerts += detect_browser_compatibility(endpoint['details']['sims']['results'], host)
+            alerts += detect_cipher_suites(endpoint['details']['suites'], host)
+            alerts += detect_protocol(endpoint['details']['protocols'], host)
     return alerts
 
 def emit_alert(alert, api_host, api_port):
     LOGGER = logging.getLogger('ssl')
-    LOGGER.info('==========')
-    LOGGER.info(json.dumps(alert))
-    # r = requests.post('https://%s:%d/a' % (api_host, api_port),
-    #                   json=payload,
-    #                   verify=False)
-    # if r.status_code != 200:
-    #     LOGGER.error("Error while emiting alert")
-    # else:
-    #     LOGGER.info("Alert correctly emitted")
+    r = requests.post('https://%s:%d/a' % (api_host, api_port),
+                      json=payload,
+                      verify=False)
+    if r.status_code != 200:
+        LOGGER.error("Error while emiting alert")
+    else:
+        LOGGER.info("Alert correctly emitted")
 
 def analyse(host, api_host, api_port):
     LOGGER = logging.getLogger("ssl")
-    p = subprocess.run(['/app/ssllabs-scan', '--quiet', host], stdout=subprocess.PIPE, check=True)
+    env_cpy = os.environ.copy()
+    del env['http_proxy']
+    del env['https_proxy']
+    p = subprocess.Popen('/app/ssllabs-scan --quiet {}'.format(host), stdout=supbrocess.Pipe, env=env_cpy)
     try:
-        rep = loads(p.stdout)
+        j, _ = p.communicate()
+        rep = loads(j.decode('ascii'))
     except:
-        LOGGER.info('Analyse has fail on %s' % resource)
+        LOGGER.info('Analyse has fail on %s' % host)
     else:
-        for alert in build_report(rep):
+        for alert in build_report(rep, host):
             emit_alert(alert, api_host, api_port)
 
 def main():
@@ -200,10 +202,9 @@ def main():
 
     # API connection
     LOGGER.info('Contacting API at : "%s"', '%s:%d' % (api_host, api_port))
-    #req = requests.get('https://%s:%d/r' % (api_host, api_port), stream=True, verify=False)
+    req = requests.get('https://%s:%d/r' % (api_host, api_port), stream=True, verify=False)
     domains = {}
-    #for resource in req.iter_content(chunk_size=None):
-    for resource in [b'https://www.assuranceendirect.com/mabite']:
+    for resource in req.iter_content(chunk_size=None):
         r = uritools.urisplit(str(resource, 'utf-8'))
         LOGGER.info('Received domain "%s"', r.host)
         if r.host in domains:
